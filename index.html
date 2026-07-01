@@ -440,8 +440,14 @@
       <select id="comp-category" onchange="updateLibrary()">
         <option value="">Select category...</option>
         <option>TRT / Testosterone</option>
-        <option>Peptides</option>
-        <option>GLP-1 / Weight loss</option>
+        <option>Healing & Recovery</option>
+        <option>Growth Hormone Secretagogues</option>
+        <option>GLP-1 / Weight Loss</option>
+        <option>Muscle Growth & Performance</option>
+        <option>Cognitive & Nootropic</option>
+        <option>Immune & Thymic</option>
+        <option>Skin, Anti-Aging & Longevity</option>
+        <option>Hormonal & Specialized</option>
         <option>Ancillaries / AI</option>
         <option>Thyroid</option>
         <option>Vitamins & Minerals</option>
@@ -510,12 +516,58 @@
 
 <script>
 const COMPOUND_LIBRARY = {
-  'TRT / Testosterone': ['Testosterone Cypionate','Testosterone Enanthate','Testosterone Propionate','Testosterone Undecanoate','Testosterone Suspension'],
-  'Peptides': ['BPC-157','TB-500 (Thymosin Beta-4)','Ipamorelin','CJC-1295','Ipamorelin / CJC-1295 Blend','AOD-9604','GHK-Cu','PT-141','Kisspeptin-10','Selank','Semax','LL-37','KPV','GLP-1 (7-37)','NAD+'],
-  'GLP-1 / Weight loss': ['Semaglutide (Ozempic/Wegovy)','Tirzepatide (Mounjaro/Zepbound)','Liraglutide (Victoza/Saxenda)'],
-  'Ancillaries / AI': ['Anastrozole','Exemestane','Letrozole','HCG','Enclomiphene','Clomid (Clomiphene)','Tamoxifen (Nolvadex)','Proviron'],
-  'Thyroid': ['Levothyroxine (T4)','Liothyronine (T3)','NDT (Natural Desiccated Thyroid)'],
-  'Vitamins & Minerals': ['Vitamin D3','Vitamin K2','Magnesium Glycinate','Zinc','Fish Oil (Omega-3)','B12 (Methylcobalamin)','NAC','Berberine','Creatine Monohydrate'],
+  'TRT / Testosterone': [
+    'Testosterone Cypionate','Testosterone Enanthate','Testosterone Propionate',
+    'Testosterone Undecanoate','Testosterone Suspension','Testosterone Gel',
+  ],
+  'Healing & Recovery': [
+    'BPC-157','BPC-157 Arginate','TB-500 (Thymosin Beta-4)','BPC-157 + TB-500 (Wolverine Stack)',
+    'KPV','ARA-290','LL-37',
+  ],
+  'Growth Hormone Secretagogues': [
+    'Ipamorelin','CJC-1295','CJC-1295 + DAC','Ipamorelin / CJC-1295 Blend',
+    'Sermorelin','Tesamorelin','MK-677 (Ibutamoren)','GHRP-2','GHRP-6',
+    'Hexarelin','Modified GRF 1-29','Ghrelin',
+  ],
+  'GLP-1 / Weight Loss': [
+    'Semaglutide (Ozempic/Wegovy)','Tirzepatide (Mounjaro/Zepbound)',
+    'Liraglutide (Victoza/Saxenda)','Dulaglutide (Trulicity)','Exenatide (Byetta)',
+    'Retatrutide','AOD-9604','Adipotide','Cagrilintide','Setmelanotide',
+    'Orforglipron','Pemvidutide','Mazdutide','Survodutide','5-Amino-1MQ',
+  ],
+  'Muscle Growth & Performance': [
+    'IGF-1 LR3','IGF-1 DES','Follistatin 344','MGF','PEG-MGF','AICAR','ACE-031',
+  ],
+  'Cognitive & Nootropic': [
+    'Selank','N-Acetyl Selank','Semax','NA-Semax-Amidate','Pinealon',
+    'DSIP','Dihexa','P21','Orexin-A','PACAP-38','Cortistatin','Cerebrolysin',
+  ],
+  'Immune & Thymic': [
+    'Thymosin Alpha-1','Thymalin','Thymopentin','Thymulin','LL-37',
+  ],
+  'Skin, Anti-Aging & Longevity': [
+    'GHK-Cu','Epithalon','Argireline','Matrixyl','SNAP-8','Glutathione',
+    'L-Carnosine','Humanin','MOTS-c','SS-31 (Elamipretide)','FOXO4-DRI',
+    'NAD+','NMN','NR (Nicotinamide Riboside)','Collagen Peptides',
+  ],
+  'Hormonal & Specialized': [
+    'PT-141 (Bremelanotide)','Kisspeptin','Oxytocin','Melanotan I','Melanotan II',
+    'Gonadorelin','HCG','VIP','Buserelin','Abaloparatide','Teriparatide',
+    'Afamelanotide','Pramlintide','Octreotide','GnIH',
+  ],
+  'Ancillaries / AI': [
+    'Anastrozole','Exemestane','Letrozole','Enclomiphene',
+    'Clomid (Clomiphene)','Tamoxifen (Nolvadex)','Proviron',
+  ],
+  'Thyroid': [
+    'Levothyroxine (T4)','Liothyronine (T3)','NDT (Natural Desiccated Thyroid)',
+  ],
+  'Vitamins & Minerals': [
+    'Vitamin D3','Vitamin K2','Magnesium Glycinate','Zinc','Fish Oil (Omega-3)',
+    'B12 (Methylcobalamin)','NAC','Berberine','Creatine Monohydrate',
+    'Ashwagandha','CoQ10','Alpha Lipoic Acid',
+  ],
+  'Custom': [],
 };
 
 const COLORS = ['#00f5a0','#00c8ff','#ff4d6d','#ffd166','#a78bfa','#fb7185','#34d399','#60a5fa'];
