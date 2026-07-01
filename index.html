@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SupTrak">
+  <meta name="theme-color" content="#0a0f1e">
+  <title>SupTrak</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --bg2: #111827;
+      --card: #1a2236;
+      --border: #1e2d47;
+      --border2: #2a3a56;
+      --accent: #00f5a0;
+      --accent2: #00c8ff;
+      --accent-dim: rgba(0,245,160,0.12);
+      --accent2-dim: rgba(0,200,255,0.12);
+      --red: #ff4d6d;
+      --red-dim: rgba(255,77,109,0.12);
+      --yellow: #ffd166;
+      --yellow-dim: rgba(255,209,102,0.12);
+      --text: #f0f4ff;
+      --text2: #8899bb;
+      --text3: #4a5a7a;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;overscroll-behavior:none}
+    body{padding-bottom:env(safe-area-inset-bottom)}
+    button{touch-action:manipulation;cursor:pointer;font-family:var(--font)}
+
+    /* SCREENS */
+    .screen{display:none;min-height:100vh}
+    .screen.active{display:flex;flex-direction:column}
+
+    /* NAV BAR */
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px;padding-top:calc(16px + env(safe-area-inset-top));flex-shrink:0}
+    .nav-logo{display:flex;align-items:center;gap:8px}
+    .logo-mark{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center}
+    .logo-mark i{font-size:16px;color:#0a0f1e}
+    .logo-text{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+    .logo-text span{color:var(--accent)}
+    .nav-action{background:none;border:none;color:var(--text2);font-size:22px;padding:4px}
+
+    /* BOTTOM TAB BAR */
+    .tab-bar{display:flex;background:var(--bg2);border-top:0.5px solid var(--border);padding-bottom:env(safe-area-inset-bottom);flex-shrink:0}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0;font-size:10px;color:var(--text3);background:none;border:none;font-family:var(--font)}
+    .tab i{font-size:22px}
+    .tab.active{color:var(--accent)}
+
+    /* SCROLL CONTENT */
+    .scroll{flex:1;overflow-y:auto;padding:16px 20px;padding-bottom:24px}
+
+    /* CARDS */
+    .card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+    .card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+
+    /* BUTTONS */
+    .btn{border:none;border-radius:var(--radius-sm);padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font)}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0f1e;width:100%;justify-content:center}
+    .btn-outline{background:none;border:0.5px solid var(--border2);color:var(--text);width:100%;justify-content:center}
+    .btn-sm{padding:7px 14px;font-size:12px;border-radius:var(--radius-sm)}
+    .btn-icon{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:8px;color:var(--text2);width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+
+    /* FIELDS */
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:11px 14px;font-size:14px;color:var(--text);font-family:var(--font);outline:none}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+    .field select option{background:var(--bg2)}
+    .field textarea{resize:none;height:80px}
+
+    /* PILLS */
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+    .pill-green{background:rgba(0,245,160,.15);color:var(--accent)}
+    .pill-blue{background:rgba(0,200,255,.15);color:var(--accent2)}
+    .pill-red{background:var(--red-dim);color:var(--red)}
+    .pill-yellow{background:var(--yellow-dim);color:var(--yellow)}
+
+    /* STAT ROW */
+    .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+    .stat{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
+    .stat-val{font-size:22px;font-weight:700;color:var(--accent);line-height:1}
+    .stat-lbl{font-size:11px;color:var(--text3);margin-top:4px}
+
+    /* DOSE ITEM */
+    .dose-item{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+    .dose-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .dose-info{flex:1;min-width:0}
+    .dose-name{font-size:14px;font-weight:600;margin-bottom:2px}
+    .dose-meta{font-size:12px;color:var(--text2)}
+    .dose-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);background:none;display:flex;align-items:center;justify-content:center;color:var(--text3);flex-shrink:0;font-size:14px}
+    .dose-check.done{background:var(--accent);border-color:var(--accent);color:#0a0f1e}
+
+    /* SECTION HEADER */
+    .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .sec-title{font-size:16px;font-weight:700}
+    .sec-action{font-size:12px;color:var(--accent);background:none;border:none;font-family:var(--font);font-weight:600}
+
+    /* COMPOUND ITEM */
+    .compound-item{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px}
+    .compound-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .compound-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+    .compound-name{font-size:15px;font-weight:600;flex:1}
+    .compound-meta{font-size:12px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap}
+    .compound-meta span{display:flex;align-items:center;gap:4px}
+
+    /* HISTORY ITEM */
+    .history-item{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+    .history-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .history-info{flex:1}
+    .history-name{font-size:13px;font-weight:600}
+    .history-meta{font-size:11px;color:var(--text2);margin-top:2px}
+    .history-amt{font-size:13px;font-weight:600;color:var(--accent)}
+
+    /* BODY DIAGRAM */
+    .body-diagram{position:relative;width:100%;max-width:280px;margin:0 auto 16px}
+    .body-diagram svg{width:100%;height:auto}
+    .site-btn{position:absolute;width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);background:var(--card);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:translate(-50%,-50%);transition:all .15s}
+    .site-btn.selected{background:var(--accent);border-color:var(--accent);color:#0a0f1e}
+    .site-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* ONBOARDING */
+    .onboard{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;background:var(--bg)}
+    .onboard-logo{width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+    .onboard-logo i{font-size:40px;color:#0a0f1e}
+    .onboard h1{font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+    .onboard h1 span{color:var(--accent)}
+    .onboard p{font-size:15px;color:var(--text2);line-height:1.65;margin-bottom:32px;max-width:320px}
+    .disclaimer-box{background:var(--yellow-dim);border:0.5px solid var(--yellow);border-radius:var(--radius);padding:14px 16px;text-align:left;margin-bottom:28px;font-size:12px;color:var(--yellow);line-height:1.6}
+    .disclaimer-box strong{display:block;margin-bottom:4px;font-size:13px}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));width:100%;max-height:90vh;overflow-y:auto}
+    .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-title{font-size:17px;font-weight:700}
+    .modal-close{background:var(--card);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:16px}
+
+    /* HEALTH METRICS */
+    .metric-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .metric-card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
+    .metric-icon{font-size:24px;margin-bottom:6px}
+    .metric-val{font-size:20px;font-weight:700;color:var(--text)}
+    .metric-lbl{font-size:11px;color:var(--text3);margin-top:2px}
+
+    /* PROGRESS BAR */
+    .prog-bar{background:var(--border);border-radius:20px;height:6px;margin-top:8px}
+    .prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+    /* EMPTY STATE */
+    .empty{text-align:center;padding:48px 20px;color:var(--text3)}
+    .empty i{font-size:40px;display:block;margin-bottom:12px;opacity:.4}
+    .empty p{font-size:14px}
+
+    /* DATE CHIP */
+    .date-chip{font-size:12px;color:var(--text2);background:var(--card);border:0.5px solid var(--border);border-radius:20px;padding:4px 12px;display:inline-block;margin-bottom:16px}
+
+    /* TOGGLE */
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)}
+    .toggle-row:last-child{border-bottom:none}
+    .toggle{width:44px;height:26px;border-radius:13px;background:var(--border2);border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+    .toggle.on{background:var(--accent)}
+    .toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+    .toggle.on::after{transform:translateX(18px)}
+
+    /* GRADIENT HEADER */
+    .grad-hdr{background:linear-gradient(135deg,rgba(0,245,160,.08),rgba(0,200,255,.08));border-bottom:0.5px solid var(--border);padding:20px;padding-top:calc(20px + env(safe-area-inset-top))}
+  </style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="screen active" id="s-onboard">
+  <div class="onboard">
+    <div class="onboard-logo"><i class="ti ti-dna-2" aria-hidden="true"></i></div>
+    <h1>Sup<span>Trak</span></h1>
+    <p>Track your supplements, peptides, and prescribed protocols. Stay consistent. See results.</p>
+    <div class="disclaimer-box">
+      <strong><i class="ti ti-alert-triangle" style="font-size:13px;vertical-align:-1px"></i> Medical disclaimer</strong>
+      SupTrak is a personal tracking tool only. It does not provide medical advice, recommend dosages, or endorse any substance. Always consult a licensed physician before starting any protocol.
+    </div>
+    <button class="btn btn-primary" style="margin-bottom:12px" onclick="go('s-setup')"><i class="ti ti-arrow-right"></i> I understand — get started</button>
+    <button class="btn btn-outline" onclick="go('s-main')">I already have an account</button>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="s-setup">
+  <div class="grad-hdr">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Step 1 of 2</div>
+    <div style="font-size:22px;font-weight:800">Your profile</div>
+  </div>
+  <div class="scroll">
+    <div class="field"><label>Your name</label><input type="text" id="setup-name" placeholder="Jane Smith"></div>
+    <div class="field"><label>Goal</label>
+      <select id="setup-goal">
+        <option value="">Select your primary goal</option>
+        <option>Body recomposition</option>
+        <option>Muscle gain</option>
+        <option>Fat loss</option>
+        <option>Recovery & healing</option>
+        <option>Hormone optimization</option>
+        <option>General health & longevity</option>
+        <option>Athletic performance</option>
+      </select>
+    </div>
+    <div class="field"><label>Current weight (lbs)</label><input type="number" id="setup-weight" placeholder="185"></div>
+    <div class="field"><label>Age</label><input type="number" id="setup-weight" placeholder="32"></div>
+    <button class="btn btn-primary" onclick="completeSetup()"><i class="ti ti-arrow-right"></i> Continue</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="screen" id="s-main">
+  <!-- DASHBOARD TAB -->
+  <div id="tab-dashboard" class="tab-content" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="grad-hdr">
+      <div class="nav-logo">
+        <div class="logo-mark"><i class="ti ti-dna-2" aria-hidden="true"></i></div>
+        <div class="logo-text">Sup<span>Trak</span></div>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;color:var(--text2)" id="dash-greeting">Good morning</div>
+          <div style="font-size:22px;font-weight:800" id="dash-name">Athlete</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text3)">Day streak</div>
+          <div style="font-size:28px;font-weight:800;color:var(--accent)" id="dash-streak">0</div>
+        </div>
+      </div>
+      <div class="prog-bar" style="margin-top:12px"><div class="prog-fill" id="dash-prog" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px" id="dash-prog-lbl">0 of 0 doses logged today</div>
+    </div>
+    <div class="scroll">
+      <div class="stat-row">
+        <div class="stat"><div class="stat-val" id="stat-today">0</div><div class="stat-lbl">Today</div></div>
+        <div class="stat"><div class="stat-val" id="stat-week">0</div><div class="stat-lbl">This week</div></div>
+        <div class="stat"><div class="stat-val" id="stat-compounds">0</div><div class="stat-lbl">Compounds</div></div>
+      </div>
+
+      <div class="sec-hdr">
+        <div class="sec-title">Today's doses</div>
+        <button class="sec-action" onclick="openLogModal()"><i class="ti ti-plus"></i> Log dose</button>
+      </div>
+      <div id="today-doses"></div>
+
+      <div class="sec-hdr" style="margin-top:8px">
+        <div class="sec-title">Today's health</div>
+        <button class="sec-action" onclick="openHealthModal()"><i class="ti ti-pencil"></i> Edit</button>
+      </div>
+      <div class="metric-row">
+        <div class="metric-card"><div class="metric-icon">⚖️</div><div class="metric-val" id="m-weight">—</div><div class="metric-lbl">Weight (lbs)</div></div>
+        <div class="metric-card"><div class="metric-icon">😴</div><div class="metric-val" id="m-sleep">—</div><div class="metric-lbl">Sleep (hrs)</div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-card"><div class="metric-icon">🔥</div><div class="metric-val" id="m-cals">—</div><div class="metric-lbl">Calories burned</div></div>
+        <div class="metric-card"><div class="metric-icon">⚡</div><div class="metric-val" id="m-energy">—</div><div class="metric-lbl">Energy (1-10)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROTOCOLS TAB -->
+  <div id="tab-protocols" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="grad-hdr">
+      <div style="font-size:22px;font-weight:800">My protocols</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">Manage your active compounds</div>
+    </div>
+    <div class="scroll">
+      <button class="btn btn-primary" style="margin-bottom:16px" onclick="openAddCompound()"><i class="ti ti-plus"></i> Add compound</button>
+      <div id="compounds-list"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="grad-hdr">
+      <div style="font-size:22px;font-weight:800">History</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">All logged doses</div>
+    </div>
+    <div class="scroll">
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- PROGRESS TAB -->
+  <div id="tab-progress" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="grad-hdr">
+      <div style="font-size:22px;font-weight:800">Progress</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">Health metrics over time</div>
+    </div>
+    <div class="scroll">
+      <div id="progress-list"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="grad-hdr">
+      <div style="font-size:22px;font-weight:800">Settings</div>
+    </div>
+    <div class="scroll">
+      <div class="card">
+        <div class="card-title">Profile</div>
+        <div class="field"><label>Name</label><input type="text" id="set-name" placeholder="Your name"></div>
+        <div class="field"><label>Goal</label>
+          <select id="set-goal">
+            <option>Body recomposition</option>
+            <option>Muscle gain</option>
+            <option>Fat loss</option>
+            <option>Recovery & healing</option>
+            <option>Hormone optimization</option>
+            <option>General health & longevity</option>
+            <option>Athletic performance</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save profile</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Notifications</div>
+        <div class="toggle-row">
+          <div><div style="font-size:14px;font-weight:500">Dose reminders</div><div style="font-size:12px;color:var(--text3)">Get reminded when doses are due</div></div>
+          <button class="toggle on" id="tog-remind" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="toggle-row">
+          <div><div style="font-size:14px;font-weight:500">Daily check-in</div><div style="font-size:12px;color:var(--text3)">Log health metrics each morning</div></div>
+          <button class="toggle on" id="tog-checkin" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">About</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6">SupTrak v1.0<br>Personal tracking only. Not medical advice.<br>Always consult your physician.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab active" id="tabn-dashboard" onclick="switchTab('dashboard')"><i class="ti ti-home"></i>Home</button>
+    <button class="tab" id="tabn-protocols" onclick="switchTab('protocols')"><i class="ti ti-dna-2"></i>Protocols</button>
+    <button class="tab" id="tabn-history" onclick="switchTab('history')"><i class="ti ti-history"></i>History</button>
+    <button class="tab" id="tabn-progress" onclick="switchTab('progress')"><i class="ti ti-chart-line"></i>Progress</button>
+    <button class="tab" id="tabn-settings" onclick="switchTab('settings')"><i class="ti ti-settings"></i>Settings</button>
+  </div>
+</div>
+
+<!-- MODAL: LOG DOSE -->
+<div class="modal-overlay" id="modal-log">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Log a dose</div>
+      <button class="modal-close" onclick="closeModal('modal-log')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Compound</label>
+      <select id="log-compound">
+        <option value="">Select compound...</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Amount</label><input type="number" id="log-amount" placeholder="100" step="0.1"></div>
+      <div class="field"><label>Unit</label>
+        <select id="log-unit">
+          <option>mg</option>
+          <option>mcg</option>
+          <option>IU</option>
+          <option>ml</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Administration</label>
+      <select id="log-route">
+        <option>Subcutaneous injection</option>
+        <option>Intramuscular injection</option>
+        <option>Oral</option>
+        <option>Sublingual</option>
+        <option>Topical</option>
+        <option>Intranasal</option>
+      </select>
+    </div>
+    <div class="field" id="site-field">
+      <label>Injection site — tap to select</label>
+      <div class="body-diagram">
+        <svg viewBox="0 0 200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Head -->
+          <ellipse cx="100" cy="30" rx="22" ry="26" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Neck -->
+          <rect x="91" y="52" width="18" height="16" rx="4" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Torso -->
+          <rect x="68" y="66" width="64" height="90" rx="10" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Left arm -->
+          <rect x="36" y="68" width="28" height="72" rx="10" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Right arm -->
+          <rect x="136" y="68" width="28" height="72" rx="10" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Left upper leg -->
+          <rect x="70" y="158" width="26" height="76" rx="10" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Right upper leg -->
+          <rect x="104" y="158" width="26" height="76" rx="10" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Left lower leg -->
+          <rect x="72" y="236" width="22" height="64" rx="8" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+          <!-- Right lower leg -->
+          <rect x="106" y="236" width="22" height="64" rx="8" fill="#1a2236" stroke="#2a3a56" stroke-width="1.5"/>
+        </svg>
+        <!-- Site buttons positioned over body -->
+        <button class="site-btn" style="left:26%;top:24%" data-site="Left delt" onclick="selectSite(this)">LD</button>
+        <button class="site-btn" style="left:74%;top:24%" data-site="Right delt" onclick="selectSite(this)">RD</button>
+        <button class="site-btn" style="left:26%;top:55%" data-site="Left glute" onclick="selectSite(this)">LG</button>
+        <button class="site-btn" style="left:74%;top:55%" data-site="Right glute" onclick="selectSite(this)">RG</button>
+        <button class="site-btn" style="left:38%;top:68%" data-site="Left quad" onclick="selectSite(this)">LQ</button>
+        <button class="site-btn" style="left:62%;top:68%" data-site="Right quad" onclick="selectSite(this)">RQ</button>
+        <button class="site-btn" style="left:50%;top:42%" data-site="Subcutaneous abdomen" onclick="selectSite(this)">AB</button>
+        <button class="site-btn" style="left:50%;top:80%" data-site="Left VG" onclick="selectSite(this)">VG</button>
+      </div>
+      <div id="selected-site-display" style="text-align:center;font-size:12px;color:var(--accent);min-height:16px"></div>
+    </div>
+    <div class="field"><label>Time</label><input type="time" id="log-time"></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="log-notes" placeholder="How do you feel? Any observations..."></textarea></div>
+    <button class="btn btn-primary" onclick="saveLog()"><i class="ti ti-check"></i> Log dose</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD COMPOUND -->
+<div class="modal-overlay" id="modal-compound">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Add compound</div>
+      <button class="modal-close" onclick="closeModal('modal-compound')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Category</label>
+      <select id="comp-category" onchange="updateLibrary()">
+        <option value="">Select category...</option>
+        <option>TRT / Testosterone</option>
+        <option>Peptides</option>
+        <option>GLP-1 / Weight loss</option>
+        <option>Ancillaries / AI</option>
+        <option>Thyroid</option>
+        <option>Vitamins & Minerals</option>
+        <option>Custom</option>
+      </select>
+    </div>
+    <div class="field" id="comp-library-field" style="display:none"><label>Compound</label>
+      <select id="comp-library">
+        <option value="">Select...</option>
+      </select>
+    </div>
+    <div class="field" id="comp-custom-field" style="display:none"><label>Custom name</label><input type="text" id="comp-custom" placeholder="e.g. My Protocol"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Dose amount</label><input type="number" id="comp-dose" placeholder="200" step="0.1"></div>
+      <div class="field"><label>Unit</label>
+        <select id="comp-unit">
+          <option>mg</option>
+          <option>mcg</option>
+          <option>IU</option>
+          <option>ml</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Frequency</label>
+      <select id="comp-freq">
+        <option>Daily</option>
+        <option>Every other day</option>
+        <option>2x per week</option>
+        <option>3x per week</option>
+        <option>Weekly</option>
+        <option>As needed</option>
+      </select>
+    </div>
+    <div class="field"><label>Administration</label>
+      <select id="comp-route">
+        <option>Subcutaneous injection</option>
+        <option>Intramuscular injection</option>
+        <option>Oral</option>
+        <option>Sublingual</option>
+        <option>Topical</option>
+        <option>Intranasal</option>
+      </select>
+    </div>
+    <div class="field"><label>Start date</label><input type="date" id="comp-start"></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="comp-notes" placeholder="Protocol details, cycle length, etc."></textarea></div>
+    <button class="btn btn-primary" onclick="saveCompound()"><i class="ti ti-plus"></i> Add to protocol</button>
+  </div>
+</div>
+
+<!-- MODAL: HEALTH CHECK-IN -->
+<div class="modal-overlay" id="modal-health">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Daily check-in</div>
+      <button class="modal-close" onclick="closeModal('modal-health')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Weight (lbs)</label><input type="number" id="h-weight" placeholder="185" step="0.1"></div>
+    <div class="field"><label>Sleep (hours)</label><input type="number" id="h-sleep" placeholder="7.5" step="0.5" min="0" max="24"></div>
+    <div class="field"><label>Calories burned</label><input type="number" id="h-cals" placeholder="2400"></div>
+    <div class="field"><label>Energy level (1–10)</label><input type="number" id="h-energy" placeholder="7" min="1" max="10"></div>
+    <div class="field"><label>Mood (1–10)</label><input type="number" id="h-mood" placeholder="8" min="1" max="10"></div>
+    <div class="field"><label>Notes</label><textarea id="h-notes" placeholder="How are you feeling today?"></textarea></div>
+    <button class="btn btn-primary" onclick="saveHealth()"><i class="ti ti-check"></i> Save check-in</button>
+  </div>
+</div>
+
+<script>
+const COMPOUND_LIBRARY = {
+  'TRT / Testosterone': ['Testosterone Cypionate','Testosterone Enanthate','Testosterone Propionate','Testosterone Undecanoate','Testosterone Suspension'],
+  'Peptides': ['BPC-157','TB-500 (Thymosin Beta-4)','Ipamorelin','CJC-1295','Ipamorelin / CJC-1295 Blend','AOD-9604','GHK-Cu','PT-141','Kisspeptin-10','Selank','Semax','LL-37','KPV','GLP-1 (7-37)','NAD+'],
+  'GLP-1 / Weight loss': ['Semaglutide (Ozempic/Wegovy)','Tirzepatide (Mounjaro/Zepbound)','Liraglutide (Victoza/Saxenda)'],
+  'Ancillaries / AI': ['Anastrozole','Exemestane','Letrozole','HCG','Enclomiphene','Clomid (Clomiphene)','Tamoxifen (Nolvadex)','Proviron'],
+  'Thyroid': ['Levothyroxine (T4)','Liothyronine (T3)','NDT (Natural Desiccated Thyroid)'],
+  'Vitamins & Minerals': ['Vitamin D3','Vitamin K2','Magnesium Glycinate','Zinc','Fish Oil (Omega-3)','B12 (Methylcobalamin)','NAC','Berberine','Creatine Monohydrate'],
+};
+
+const COLORS = ['#00f5a0','#00c8ff','#ff4d6d','#ffd166','#a78bfa','#fb7185','#34d399','#60a5fa'];
+
+let state = {
+  profile: {name:'', goal:'', weight:'', age:''},
+  compounds: [],
+  logs: [],
+  health: [],
+  streak: 0,
+};
+
+let selectedSite = '';
+
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const el = document.getElementById('tab-' + name);
+  if (el) { el.style.display = 'flex'; el.style.flexDirection = 'column'; }
+  document.getElementById('tabn-' + name).classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'protocols') renderProtocols();
+  if (name === 'history') renderHistory();
+  if (name === 'progress') renderProgress();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function completeSetup() {
+  const name = document.getElementById('setup-name').value.trim() || 'Athlete';
+  const goal = document.getElementById('setup-goal').value;
+  state.profile.name = name;
+  state.profile.goal = goal;
+  document.getElementById('set-name').value = name;
+  go('s-main');
+  renderDashboard();
+}
+
+function saveSettings() {
+  state.profile.name = document.getElementById('set-name').value.trim() || 'Athlete';
+  state.profile.goal = document.getElementById('set-goal').value;
+  renderDashboard();
+  alert('Profile saved!');
+}
+
+// DASHBOARD
+function renderDashboard() {
+  const hr = new Date().getHours();
+  const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dash-greeting').textContent = greeting;
+  document.getElementById('dash-name').textContent = state.profile.name || 'Athlete';
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = state.logs.filter(l => l.date === today);
+  const due = state.compounds.length;
+  const done = todayLogs.length;
+  const pct = due > 0 ? Math.round(done / due * 100) : 0;
+
+  document.getElementById('dash-prog').style.width = pct + '%';
+  document.getElementById('dash-prog-lbl').textContent = `${done} of ${due} doses logged today`;
+  document.getElementById('stat-today').textContent = done;
+  document.getElementById('stat-week').textContent = state.logs.filter(l => {
+    const d = new Date(l.date); const now = new Date();
+    return (now - d) < 7 * 86400000;
+  }).length;
+  document.getElementById('stat-compounds').textContent = state.compounds.length;
+  document.getElementById('dash-streak').textContent = state.streak;
+
+  const todayHealth = state.health.find(h => h.date === today);
+  document.getElementById('m-weight').textContent = todayHealth?.weight || '—';
+  document.getElementById('m-sleep').textContent = todayHealth?.sleep || '—';
+  document.getElementById('m-cals').textContent = todayHealth?.cals || '—';
+  document.getElementById('m-energy').textContent = todayHealth?.energy || '—';
+
+  const el = document.getElementById('today-doses');
+  if (!state.compounds.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-dna-2"></i><p>No compounds yet.<br>Add one in Protocols.</p></div>';
+    return;
+  }
+  el.innerHTML = state.compounds.map(c => {
+    const logged = todayLogs.find(l => l.compoundId === c.id);
+    return `<div class="dose-item">
+      <div class="dose-dot" style="background:${c.color}"></div>
+      <div class="dose-info">
+        <div class="dose-name">${c.name}</div>
+        <div class="dose-meta">${c.dose}${c.unit} · ${c.freq} · ${c.route}</div>
+      </div>
+      <button class="dose-check${logged ? ' done' : ''}" onclick="quickLog(${c.id})">
+        <i class="ti ti-check"></i>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function quickLog(compoundId) {
+  const c = state.compounds.find(x => x.id === compoundId);
+  if (!c) return;
+  const today = new Date().toISOString().split('T')[0];
+  const existing = state.logs.find(l => l.compoundId === compoundId && l.date === today);
+  if (existing) {
+    state.logs = state.logs.filter(l => !(l.compoundId === compoundId && l.date === today));
+  } else {
+    state.logs.push({
+      id: Date.now(), compoundId, compoundName: c.name, date: today,
+      amount: c.dose, unit: c.unit, route: c.route, site: '', notes: '',
+      time: new Date().toTimeString().slice(0,5), color: c.color
+    });
+    updateStreak();
+  }
+  renderDashboard();
+}
+
+function updateStreak() {
+  const today = new Date().toISOString().split('T')[0];
+  const hasTodayLog = state.logs.some(l => l.date === today);
+  if (hasTodayLog) state.streak = Math.max(state.streak, 1);
+}
+
+// LOG MODAL
+function openLogModal() {
+  const sel = document.getElementById('log-compound');
+  sel.innerHTML = '<option value="">Select compound...</option>' +
+    state.compounds.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const now = new Date();
+  document.getElementById('log-time').value = now.toTimeString().slice(0,5);
+  selectedSite = '';
+  document.querySelectorAll('.site-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('selected-site-display').textContent = '';
+  openModal('modal-log');
+}
+
+function selectSite(btn) {
+  document.querySelectorAll('.site-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedSite = btn.dataset.site;
+  document.getElementById('selected-site-display').textContent = '📍 ' + selectedSite;
+}
+
+function saveLog() {
+  const compoundId = parseInt(document.getElementById('log-compound').value);
+  const c = state.compounds.find(x => x.id === compoundId);
+  if (!c) { alert('Please select a compound.'); return; }
+  const amount = document.getElementById('log-amount').value || c.dose;
+  const unit = document.getElementById('log-unit').value;
+  const today = new Date().toISOString().split('T')[0];
+  state.logs.push({
+    id: Date.now(), compoundId, compoundName: c.name, date: today,
+    amount, unit, route: document.getElementById('log-route').value,
+    site: selectedSite, notes: document.getElementById('log-notes').value,
+    time: document.getElementById('log-time').value, color: c.color
+  });
+  updateStreak();
+  closeModal('modal-log');
+  renderDashboard();
+}
+
+// PROTOCOLS
+function updateLibrary() {
+  const cat = document.getElementById('comp-category').value;
+  const libField = document.getElementById('comp-library-field');
+  const customField = document.getElementById('comp-custom-field');
+  if (cat === 'Custom') {
+    libField.style.display = 'none';
+    customField.style.display = 'block';
+  } else if (cat && COMPOUND_LIBRARY[cat]) {
+    libField.style.display = 'block';
+    customField.style.display = 'none';
+    const sel = document.getElementById('comp-library');
+    sel.innerHTML = '<option value="">Select...</option>' +
+      COMPOUND_LIBRARY[cat].map(n => `<option>${n}</option>`).join('');
+  } else {
+    libField.style.display = 'none';
+    customField.style.display = 'none';
+  }
+}
+
+function openAddCompound() {
+  document.getElementById('comp-category').value = '';
+  document.getElementById('comp-library-field').style.display = 'none';
+  document.getElementById('comp-custom-field').style.display = 'none';
+  document.getElementById('comp-start').value = new Date().toISOString().split('T')[0];
+  openModal('modal-compound');
+}
+
+function saveCompound() {
+  const cat = document.getElementById('comp-category').value;
+  let name = '';
+  if (cat === 'Custom') {
+    name = document.getElementById('comp-custom').value.trim();
+  } else {
+    name = document.getElementById('comp-library').value;
+  }
+  if (!name) { alert('Please select or enter a compound name.'); return; }
+  const dose = document.getElementById('comp-dose').value;
+  if (!dose) { alert('Please enter a dose amount.'); return; }
+  state.compounds.push({
+    id: Date.now(), name, category: cat,
+    dose, unit: document.getElementById('comp-unit').value,
+    freq: document.getElementById('comp-freq').value,
+    route: document.getElementById('comp-route').value,
+    start: document.getElementById('comp-start').value,
+    notes: document.getElementById('comp-notes').value,
+    color: COLORS[state.compounds.length % COLORS.length],
+    active: true
+  });
+  closeModal('modal-compound');
+  renderProtocols();
+  renderDashboard();
+}
+
+function renderProtocols() {
+  const el = document.getElementById('compounds-list');
+  if (!state.compounds.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-dna-2"></i><p>No compounds yet.<br>Add one to get started.</p></div>';
+    return;
+  }
+  el.innerHTML = state.compounds.map(c => {
+    const logs = state.logs.filter(l => l.compoundId === c.id);
+    return `<div class="compound-item">
+      <div class="compound-hdr">
+        <div class="compound-dot" style="background:${c.color}"></div>
+        <div class="compound-name">${c.name}</div>
+        <span class="pill pill-green">${c.active ? 'Active' : 'Paused'}</span>
+        <button class="btn-icon" onclick="deleteCompound(${c.id})" style="margin-left:auto"><i class="ti ti-trash" style="font-size:14px"></i></button>
+      </div>
+      <div class="compound-meta">
+        <span><i class="ti ti-pill" style="font-size:11px"></i> ${c.dose}${c.unit}</span>
+        <span><i class="ti ti-repeat" style="font-size:11px"></i> ${c.freq}</span>
+        <span><i class="ti ti-syringe" style="font-size:11px"></i> ${c.route}</span>
+        <span><i class="ti ti-calendar" style="font-size:11px"></i> Since ${c.start}</span>
+      </div>
+      ${c.notes ? `<div style="font-size:12px;color:var(--text3);margin-top:8px;font-style:italic">${c.notes}</div>` : ''}
+      <div style="font-size:12px;color:var(--text2);margin-top:10px"><i class="ti ti-check" style="font-size:11px;color:var(--accent)"></i> ${logs.length} doses logged total</div>
+    </div>`;
+  }).join('');
+}
+
+function deleteCompound(id) {
+  if (!confirm('Remove this compound?')) return;
+  state.compounds = state.compounds.filter(c => c.id !== id);
+  renderProtocols();
+  renderDashboard();
+}
+
+// HISTORY
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!state.logs.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-history"></i><p>No doses logged yet.</p></div>';
+    return;
+  }
+  const sorted = [...state.logs].sort((a,b) => b.date.localeCompare(a.date) || b.time?.localeCompare(a.time));
+  let lastDate = '';
+  el.innerHTML = sorted.map(l => {
+    let dateHdr = '';
+    if (l.date !== lastDate) {
+      lastDate = l.date;
+      dateHdr = `<div class="date-chip">${new Date(l.date + 'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>`;
+    }
+    return `${dateHdr}<div class="history-item">
+      <div class="history-dot" style="background:${l.color}"></div>
+      <div class="history-info">
+        <div class="history-name">${l.compoundName}</div>
+        <div class="history-meta">${l.time || ''} ${l.site ? '· 📍 ' + l.site : ''} ${l.route ? '· ' + l.route : ''}</div>
+        ${l.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;font-style:italic">${l.notes}</div>` : ''}
+      </div>
+      <div class="history-amt">${l.amount}${l.unit}</div>
+    </div>`;
+  }).join('');
+}
+
+// HEALTH
+function openHealthModal() { openModal('modal-health'); }
+
+function saveHealth() {
+  const today = new Date().toISOString().split('T')[0];
+  const entry = {
+    date: today,
+    weight: document.getElementById('h-weight').value,
+    sleep: document.getElementById('h-sleep').value,
+    cals: document.getElementById('h-cals').value,
+    energy: document.getElementById('h-energy').value,
+    mood: document.getElementById('h-mood').value,
+    notes: document.getElementById('h-notes').value,
+  };
+  state.health = state.health.filter(h => h.date !== today);
+  state.health.push(entry);
+  closeModal('modal-health');
+  renderDashboard();
+}
+
+// PROGRESS
+function renderProgress() {
+  const el = document.getElementById('progress-list');
+  if (!state.health.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-chart-line"></i><p>No check-ins yet.<br>Log your health from the dashboard.</p></div>';
+    return;
+  }
+  const sorted = [...state.health].sort((a,b) => b.date.localeCompare(a.date));
+  el.innerHTML = sorted.map(h => `
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${new Date(h.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
+      <div class="metric-row">
+        ${h.weight ? `<div class="metric-card"><div class="metric-icon">⚖️</div><div class="metric-val">${h.weight}</div><div class="metric-lbl">lbs</div></div>` : ''}
+        ${h.sleep ? `<div class="metric-card"><div class="metric-icon">😴</div><div class="metric-val">${h.sleep}</div><div class="metric-lbl">hrs sleep</div></div>` : ''}
+        ${h.energy ? `<div class="metric-card"><div class="metric-icon">⚡</div><div class="metric-val">${h.energy}/10</div><div class="metric-lbl">energy</div></div>` : ''}
+        ${h.mood ? `<div class="metric-card"><div class="metric-icon">😊</div><div class="metric-val">${h.mood}/10</div><div class="metric-lbl">mood</div></div>` : ''}
+      </div>
+      ${h.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;font-style:italic">${h.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// INIT
+document.getElementById('comp-start').value = new Date().toISOString().split('T')[0];
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
