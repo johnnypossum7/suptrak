@@ -530,7 +530,16 @@
       </div>
       <div class="card">
         <div class="card-title">About</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.6">SupTrak v1.0<br>Personal tracking only. Not medical advice.<br>Always consult your physician.</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px">SupTrak v1.0 · Personal tracking only. Not medical advice. Always consult your physician.</div>
+        <a href="privacy.html" style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text);text-decoration:none;padding:10px 0;border-top:0.5px solid var(--border)">
+          <span><i class="ti ti-lock" style="font-size:14px;margin-right:8px;color:var(--text2)"></i>Privacy Policy</span>
+          <i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3)"></i>
+        </a>
+        <div style="border-top:0.5px solid var(--border);padding-top:12px;margin-top:4px">
+          <button onclick="confirmResetData()" style="width:100%;background:var(--red-dim);border:0.5px solid var(--red);border-radius:var(--radius-sm);padding:11px;font-size:14px;font-weight:600;color:var(--red);cursor:pointer;font-family:var(--font)">
+            <i class="ti ti-trash"></i> Delete all my data
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1566,6 +1575,26 @@ function renderStacks() {
         }).join('')}</div>
       </div>`;
     }).join('') + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">All compounds</div>';
+}
+
+// DATA RESET
+function confirmResetData() {
+  if (!confirm('This will permanently delete all your compounds, logs, health data, stacks, and cycles. This cannot be undone.\n\nAre you sure?')) return;
+  if (!confirm('Last chance — delete everything?')) return;
+  state.compounds = [];
+  state.logs = [];
+  state.health = [];
+  state.meals = [];
+  state.stacks = [];
+  state.cycles = [];
+  state.streak = 0;
+  state.profile = {name:'', goal:'', weight:'', age:''};
+  localStorage.removeItem('suptrak-state');
+  localStorage.removeItem('suptrak-notif');
+  renderDashboard();
+  renderProtocols();
+  switchTab('dashboard');
+  alert('All data deleted.');
 }
 
 // QUICK INPUT
