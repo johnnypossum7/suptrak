@@ -362,12 +362,20 @@
       </div>
       <div class="metric-row">
         <div class="metric-card"><div class="metric-icon">⚖️</div><div class="metric-val" id="m-weight">—</div><div class="metric-lbl">Weight (lbs)</div></div>
-        <div class="metric-card"><div class="metric-icon">😴</div><div class="metric-val" id="m-sleep">—</div><div class="metric-lbl">Sleep (hrs)</div></div>
-      </div>
-      <div class="metric-row">
-        <div class="metric-card"><div class="metric-icon">🔥</div><div class="metric-val" id="m-cals">—</div><div class="metric-lbl">Calories burned</div></div>
         <div class="metric-card"><div class="metric-icon">⚡</div><div class="metric-val" id="m-energy">—</div><div class="metric-lbl">Energy (1-10)</div></div>
       </div>
+      <div class="metric-row">
+        <div class="metric-card" style="cursor:pointer" onclick="openAddMeal()">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:20px">🍽️</span>
+            <span style="font-size:10px;color:var(--accent);font-weight:600">+ Add</span>
+          </div>
+          <div class="metric-val" id="m-cals-in">—</div>
+          <div class="metric-lbl">Calories in</div>
+        </div>
+        <div class="metric-card"><div class="metric-icon">🔥</div><div class="metric-val" id="m-cals">—</div><div class="metric-lbl">Calories burned</div></div>
+      </div>
+      <div id="meals-today" style="margin-top:4px"></div>
     </div>
   </div>
 
@@ -426,7 +434,7 @@
           <select id="chart-metric" onchange="renderProgress()" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;font-size:11px;color:var(--text);font-family:var(--font);outline:none">
             <option value="energy">Energy</option>
             <option value="mood">Mood</option>
-            <option value="sleep">Sleep</option>
+            <option value="calsIn">Calories in</option>
             <option value="weight">Weight</option>
           </select>
         </div>
@@ -659,6 +667,24 @@
   </div>
 </div>
 
+<!-- MODAL: ADD MEAL -->
+<div class="modal-overlay" id="modal-meal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Log meal</div>
+      <button class="modal-close" onclick="closeModal('modal-meal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Meal / food</label><input type="text" id="meal-name" placeholder="e.g. Breakfast, Chicken + rice, Protein shake"></div>
+    <div class="field"><label>Calories</label><input type="number" id="meal-cals" placeholder="500" min="0"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('meal-name').value='Breakfast'">Breakfast</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('meal-name').value='Lunch'">Lunch</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('meal-name').value='Dinner'">Dinner</button>
+    </div>
+    <button class="btn btn-primary" onclick="saveMeal()"><i class="ti ti-check"></i> Add meal</button>
+  </div>
+</div>
+
 <!-- MODAL: ADD CYCLE -->
 <div class="modal-overlay" id="modal-cycle">
   <div class="modal">
@@ -703,7 +729,6 @@
       <button class="modal-close" onclick="closeModal('modal-health')"><i class="ti ti-x"></i></button>
     </div>
     <div class="field"><label>Weight (lbs)</label><input type="number" id="h-weight" placeholder="185" step="0.1"></div>
-    <div class="field"><label>Sleep (hours)</label><input type="number" id="h-sleep" placeholder="7.5" step="0.5" min="0" max="24"></div>
     <div class="field"><label>Calories burned</label><input type="number" id="h-cals" placeholder="2400"></div>
     <div class="field"><label>Energy level (1–10)</label><input type="number" id="h-energy" placeholder="7" min="1" max="10"></div>
     <div class="field"><label>Mood (1–10)</label><input type="number" id="h-mood" placeholder="8" min="1" max="10"></div>
@@ -777,6 +802,7 @@ let state = {
   health: [],
   stacks: [],
   cycles: [],
+  meals: [],
   streak: 0,
 };
 
@@ -849,7 +875,21 @@ function renderDashboard() {
 
   const todayHealth = state.health.find(h => h.date === today);
   document.getElementById('m-weight').textContent = todayHealth?.weight || '—';
-  document.getElementById('m-sleep').textContent = todayHealth?.sleep || '—';
+  const todayMeals = state.meals ? state.meals.filter(m => m.date === today) : [];
+  const totalCalsIn = todayMeals.reduce((sum, m) => sum + (parseInt(m.cals) || 0), 0);
+  document.getElementById('m-cals-in').textContent = totalCalsIn > 0 ? totalCalsIn.toLocaleString() : '—';
+  const mealList = document.getElementById('meals-today');
+  if (mealList) {
+    mealList.innerHTML = todayMeals.length ? todayMeals.map(m =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px">
+        <span style="font-size:13px">${m.name}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--accent)">${parseInt(m.cals).toLocaleString()} cal</span>
+          <button onclick="deleteMeal(${m.id})" style="background:none;border:none;color:var(--text3);font-size:14px;padding:0;cursor:pointer"><i class="ti ti-x"></i></button>
+        </div>
+      </div>`
+    ).join('') : '';
+  }
   document.getElementById('m-cals').textContent = todayHealth?.cals || '—';
   document.getElementById('m-energy').textContent = todayHealth?.energy || '—';
 
@@ -1080,7 +1120,6 @@ function saveHealth() {
   const entry = {
     date: today,
     weight: document.getElementById('h-weight').value,
-    sleep: document.getElementById('h-sleep').value,
     cals: document.getElementById('h-cals').value,
     energy: document.getElementById('h-energy').value,
     mood: document.getElementById('h-mood').value,
@@ -1492,6 +1531,35 @@ function renderStacks() {
         }).join('')}</div>
       </div>`;
     }).join('') + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">All compounds</div>';
+}
+
+// MEALS
+function openAddMeal() {
+  document.getElementById('meal-name').value = '';
+  document.getElementById('meal-cals').value = '';
+  openModal('modal-meal');
+}
+
+function saveMeal() {
+  const name = document.getElementById('meal-name').value.trim();
+  const cals = document.getElementById('meal-cals').value;
+  if (!name) { alert('Enter a meal name.'); return; }
+  if (!cals || parseInt(cals) < 0) { alert('Enter calories.'); return; }
+  if (!state.meals) state.meals = [];
+  state.meals.push({
+    id: Date.now(),
+    name,
+    cals: parseInt(cals),
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0,5),
+  });
+  closeModal('modal-meal');
+  renderDashboard();
+}
+
+function deleteMeal(id) {
+  state.meals = state.meals.filter(m => m.id !== id);
+  renderDashboard();
 }
 
 // NOTIFICATIONS
