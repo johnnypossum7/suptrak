@@ -471,16 +471,34 @@
         </div>
         <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save profile</button>
       </div>
-      <div class="card">
+      <div class="card" id="notif-card">
         <div class="card-title">Notifications</div>
-        <div class="toggle-row">
-          <div><div style="font-size:14px;font-weight:500">Dose reminders</div><div style="font-size:12px;color:var(--text3)">Get reminded when doses are due</div></div>
-          <button class="toggle on" id="tog-remind" onclick="this.classList.toggle('on')"></button>
+        <div id="notif-permission-banner" style="display:none;background:var(--accent-dim);border:0.5px solid var(--accent);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--accent);line-height:1.5">
+          <strong style="display:block;margin-bottom:4px"><i class="ti ti-bell" style="font-size:12px"></i> Enable notifications</strong>
+          Tap below to allow SupTrak to send you reminders and daily health facts.
+          <button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%" onclick="requestNotifPermission()">Allow notifications</button>
         </div>
         <div class="toggle-row">
-          <div><div style="font-size:14px;font-weight:500">Daily check-in</div><div style="font-size:12px;color:var(--text3)">Log health metrics each morning</div></div>
-          <button class="toggle on" id="tog-checkin" onclick="this.classList.toggle('on')"></button>
+          <div><div style="font-size:14px;font-weight:500">Dose reminders</div><div style="font-size:12px;color:var(--text3)">Reminded daily at your set time</div></div>
+          <button class="toggle on" id="tog-remind" onclick="toggleNotifSetting('remind',this)"></button>
         </div>
+        <div id="remind-time-row" style="padding:8px 0 4px;border-bottom:0.5px solid var(--border)">
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">Reminder time</label>
+          <input type="time" id="remind-time" value="08:00" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;font-size:14px;color:var(--text);font-family:var(--font);outline:none;width:100%" onchange="saveNotifSettings()">
+        </div>
+        <div class="toggle-row">
+          <div><div style="font-size:14px;font-weight:500">Daily check-in</div><div style="font-size:12px;color:var(--text3)">Morning prompt to log health metrics</div></div>
+          <button class="toggle on" id="tog-checkin" onclick="toggleNotifSetting('checkin',this)"></button>
+        </div>
+        <div class="toggle-row">
+          <div><div style="font-size:14px;font-weight:500">Health facts</div><div style="font-size:12px;color:var(--text3)">Daily peptide and health tip</div></div>
+          <button class="toggle" id="tog-facts" onclick="toggleNotifSetting('facts',this)"></button>
+        </div>
+        <div class="toggle-row">
+          <div><div style="font-size:14px;font-weight:500">Streak alerts</div><div style="font-size:12px;color:var(--text3)">Milestone and risk-of-losing alerts</div></div>
+          <button class="toggle" id="tog-streak" onclick="toggleNotifSetting('streak',this)"></button>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-top:12px;width:100%" onclick="testNotification()"><i class="ti ti-bell-ringing"></i> Send test notification</button>
       </div>
       <div class="card">
         <div class="card-title">About</div>
@@ -1476,8 +1494,177 @@ function renderStacks() {
     }).join('') + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">All compounds</div>';
 }
 
+// NOTIFICATIONS
+const QUOTES = [
+  "Consistency compounds. Every dose logged is progress toward your goal.",
+  "Small daily improvements lead to staggering long-term results.",
+  "Your body is a system. Treat it with precision.",
+  "Discipline is just remembering what you want.",
+  "Recovery is where growth actually happens.",
+  "Log it. Track it. Optimize it.",
+  "Every rep, every dose, every check-in — it all adds up.",
+  "The best protocol is the one you actually stick to.",
+  "Progress isn't always visible. Trust the process.",
+  "Your streak is proof you show up. Keep it alive.",
+  "Peptides work. Consistency works better.",
+  "Data beats guessing. Always.",
+  "Optimization is a lifestyle, not a moment.",
+  "The gap between who you are and who you want to be is closed by daily action.",
+  "Show up today. Future you will thank you.",
+];
+
+const HEALTH_FACTS = [
+  "BPC-157 has been shown to accelerate tendon and ligament healing in animal studies by upregulating growth factor receptors.",
+  "Sleep is when 70–80% of daily growth hormone is released — protecting your sleep protects your gains.",
+  "Testosterone levels peak in the morning and dip in the afternoon. Timing your training to match can improve performance.",
+  "Ipamorelin is one of the most selective GH secretagogues — it stimulates GH release without significantly affecting cortisol or prolactin.",
+  "TB-500 promotes actin regulation, helping cells migrate and regenerate — useful for both injury repair and flexibility.",
+  "Magnesium is involved in over 300 enzymatic reactions. Most people are deficient, and it directly impacts sleep quality and testosterone production.",
+  "NAD+ levels naturally decline with age. Supplementing with NMN or NR may support mitochondrial function and energy production.",
+  "GLP-1 receptor agonists like semaglutide work by slowing gastric emptying and signaling satiety to the brain — not just suppressing appetite.",
+  "Vitamin D3 functions more like a hormone than a vitamin — it influences over 1,000 genes, including those regulating testosterone.",
+  "GHK-Cu is a naturally occurring copper peptide that declines with age. It stimulates collagen synthesis and has antioxidant properties.",
+  "Creatine monohydrate is one of the most studied supplements in history — it improves ATP regeneration, which benefits both strength and cognition.",
+  "PT-141 (Bremelanotide) works centrally in the brain on melanocortin receptors, unlike other compounds that work peripherally.",
+  "Epithalon is a tetrapeptide studied for its ability to restore melatonin production in the pineal gland and potentially extend telomere length.",
+  "Zinc is essential for testosterone synthesis. Even mild deficiency can significantly reduce T levels within weeks.",
+  "Sermorelin mimics the body's own GHRH, making it a more physiological approach to growth hormone optimization than direct GH use.",
+  "Thymosin Alpha-1 is FDA-approved in some countries for chronic hepatitis and immune dysfunction. It enhances T-cell and NK cell activity.",
+  "CoQ10 is critical for mitochondrial electron transport. Statin users should strongly consider supplementation as statins deplete CoQ10.",
+  "Melanotan II not only affects pigmentation but also acts on the hypothalamus to influence appetite and sexual function.",
+  "Fish oil's EPA component is primarily anti-inflammatory, while DHA is critical for brain cell membrane structure and signaling.",
+  "Tirzepatide targets both GIP and GLP-1 receptors, which is why it produces greater weight loss than semaglutide in head-to-head trials.",
+];
+
+let notifSettings = {
+  remind: true, checkin: true, facts: false, streak: false,
+  remindTime: '08:00',
+};
+let notifTimers = [];
+
+function loadNotifSettings() {
+  const saved = localStorage.getItem('suptrak-notif');
+  if (saved) notifSettings = {...notifSettings, ...JSON.parse(saved)};
+  document.getElementById('tog-remind').classList.toggle('on', notifSettings.remind);
+  document.getElementById('tog-checkin').classList.toggle('on', notifSettings.checkin);
+  document.getElementById('tog-facts').classList.toggle('on', notifSettings.facts);
+  document.getElementById('tog-streak').classList.toggle('on', notifSettings.streak);
+  document.getElementById('remind-time').value = notifSettings.remindTime;
+  checkNotifPermission();
+}
+
+function saveNotifSettings() {
+  notifSettings.remindTime = document.getElementById('remind-time').value;
+  localStorage.setItem('suptrak-notif', JSON.stringify(notifSettings));
+  scheduleNotifications();
+}
+
+function toggleNotifSetting(key, btn) {
+  btn.classList.toggle('on');
+  notifSettings[key] = btn.classList.contains('on');
+  saveNotifSettings();
+}
+
+function checkNotifPermission() {
+  const banner = document.getElementById('notif-permission-banner');
+  if (!banner) return;
+  if (!('Notification' in window)) { banner.style.display = 'none'; return; }
+  banner.style.display = Notification.permission === 'granted' ? 'none' : 'block';
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) { alert('Notifications not supported on this device.'); return; }
+  const perm = await Notification.requestPermission();
+  checkNotifPermission();
+  if (perm === 'granted') { scheduleNotifications(); sendNotif('SupTrak', 'Notifications enabled! You\'re all set.', '✅'); }
+}
+
+function sendNotif(title, body, icon) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  new Notification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: title });
+}
+
+function scheduleNotifications() {
+  notifTimers.forEach(t => clearTimeout(t));
+  notifTimers = [];
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const now = new Date();
+  function msUntil(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const target = new Date(now);
+    target.setHours(h, m, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    return target - now;
+  }
+
+  if (notifSettings.remind) {
+    const ms = msUntil(notifSettings.remindTime);
+    const t = setTimeout(() => {
+      const today = new Date().toISOString().split('T')[0];
+      const dueCompounds = state.compounds.filter(c => !state.logs.find(l => l.compoundId === c.id && l.date === today));
+      if (dueCompounds.length > 0) {
+        sendNotif('Dose reminder', `${dueCompounds.length} compound${dueCompounds.length>1?'s':''} due today: ${dueCompounds.slice(0,2).map(c=>c.name).join(', ')}${dueCompounds.length>2?' +more':''}`, '💊');
+      }
+      scheduleNotifications();
+    }, ms);
+    notifTimers.push(t);
+  }
+
+  if (notifSettings.checkin) {
+    const ms = msUntil('07:30');
+    const t = setTimeout(() => {
+      const today = new Date().toISOString().split('T')[0];
+      if (!state.health.find(h => h.date === today)) {
+        sendNotif('Morning check-in', 'How are you feeling today? Log your health metrics in SupTrak.', '📋');
+      }
+      scheduleNotifications();
+    }, ms);
+    notifTimers.push(t);
+  }
+
+  if (notifSettings.facts) {
+    const ms = msUntil('09:00');
+    const t = setTimeout(() => {
+      const fact = HEALTH_FACTS[Math.floor(Math.random() * HEALTH_FACTS.length)];
+      sendNotif('Daily health fact', fact, '🔬');
+    }, ms);
+    notifTimers.push(t);
+  }
+
+  if (notifSettings.streak) {
+    const ms = msUntil('20:00');
+    const t = setTimeout(() => {
+      const today = new Date().toISOString().split('T')[0];
+      const todayDone = state.logs.some(l => l.date === today);
+      if (!todayDone && state.streak > 0) {
+        sendNotif('Streak at risk!', `You have a ${state.streak}-day streak. Don\'t break it — log a dose before midnight.`, '🔥');
+      } else if (todayDone && [7,14,30,60,90].includes(state.streak)) {
+        const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+        sendNotif(`${state.streak}-day streak!`, quote, '🏆');
+      }
+    }, ms);
+    notifTimers.push(t);
+  }
+}
+
+function testNotification() {
+  if (!('Notification' in window)) { alert('Notifications not supported.'); return; }
+  if (Notification.permission !== 'granted') { requestNotifPermission(); return; }
+  const opts = [
+    () => sendNotif('Dose reminder', `3 compounds due today: Testosterone Cypionate, BPC-157, Ipamorelin`, '💊'),
+    () => sendNotif('Daily health fact', HEALTH_FACTS[Math.floor(Math.random() * HEALTH_FACTS.length)], '🔬'),
+    () => sendNotif('Morning check-in', 'How are you feeling today? Log your health metrics in SupTrak.', '📋'),
+    () => { const q = QUOTES[Math.floor(Math.random() * QUOTES.length)]; sendNotif('7-day streak!', q, '🏆'); },
+  ];
+  opts[Math.floor(Math.random() * opts.length)]();
+}
+
 // INIT
 document.getElementById('comp-start').value = new Date().toISOString().split('T')[0];
+document.getElementById('cycle-start').value = new Date().toISOString().split('T')[0];
+loadNotifSettings();
+scheduleNotifications();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
