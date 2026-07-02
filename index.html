@@ -176,6 +176,55 @@
 
     /* GRADIENT HEADER */
     .grad-hdr{background:linear-gradient(135deg,rgba(0,245,160,.08),rgba(0,200,255,.08));border-bottom:0.5px solid var(--border);padding:20px;padding-top:calc(20px + env(safe-area-inset-top))}
+
+    /* GLOW CARDS */
+    .card-glow{background:var(--card);border:0.5px solid rgba(0,245,160,0.25);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 0 18px rgba(0,245,160,0.07),0 2px 8px rgba(0,0,0,0.3)}
+    .dose-item-glow{box-shadow:0 0 14px rgba(0,245,160,0.08),0 2px 6px rgba(0,0,0,0.25);border-color:rgba(0,245,160,0.15)}
+
+    /* STREAK RING */
+    .streak-ring-wrap{position:relative;width:60px;height:60px;flex-shrink:0}
+    .streak-ring-wrap svg{position:absolute;top:0;left:0;width:100%;height:100%;transform:rotate(-90deg)}
+    .streak-ring-bg{stroke:#1e2d47;stroke-width:3;fill:none}
+    .streak-ring-fill{stroke:url(#streakGrad);stroke-width:3;fill:none;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
+    .streak-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .streak-num{font-size:18px;font-weight:800;color:var(--accent);line-height:1}
+    .streak-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+
+    /* LOGO PULSE */
+    @keyframes logo-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,245,160,0.4)}50%{box-shadow:0 0 0 8px rgba(0,245,160,0)}}
+    .logo-mark{animation:logo-pulse 3s ease-in-out infinite}
+    .onboard-logo{animation:logo-pulse 3s ease-in-out infinite}
+
+    /* CHECKMARK POP */
+    @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}70%{transform:scale(0.9)}100%{transform:scale(1)}}
+    .dose-check.pop{animation:pop .35s cubic-bezier(.4,0,.2,1)}
+
+    /* LAST DOSED STATUS */
+    .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .status-today{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+    .status-yesterday{background:var(--yellow)}
+    .status-overdue{background:var(--red);box-shadow:0 0 6px var(--red)}
+    .status-never{background:var(--border2)}
+
+    /* COMPOUND CARD GLOW based on status */
+    .compound-item.status-ok{border-color:rgba(0,245,160,0.2);box-shadow:0 0 12px rgba(0,245,160,0.06)}
+    .compound-item.status-warn{border-color:rgba(255,209,102,0.2);box-shadow:0 0 12px rgba(255,209,102,0.06)}
+    .compound-item.status-late{border-color:rgba(255,77,109,0.2);box-shadow:0 0 12px rgba(255,77,109,0.06)}
+
+    /* STAT CARD GLOW */
+    .stat{box-shadow:0 0 16px rgba(0,245,160,0.05),0 2px 6px rgba(0,0,0,0.2)}
+
+    /* TAB BAR ACTIVE GLOW */
+    .tab.active{color:var(--accent);text-shadow:0 0 10px rgba(0,245,160,0.5)}
+    .tab.active i{filter:drop-shadow(0 0 4px rgba(0,245,160,0.6))}
+
+    /* SMOOTH CARD HOVER */
+    .compound-item,.dose-item,.history-item{transition:border-color .2s,box-shadow .2s}
+
+    /* PROGRESS BAR ANIMATED */
+    .prog-fill{transition:width 1s cubic-bezier(.4,0,.2,1)}
+    @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+    .prog-fill{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% auto;animation:shimmer 3s linear infinite}
   </style>
 </head>
 <body>
@@ -235,9 +284,21 @@
           <div style="font-size:13px;color:var(--text2)" id="dash-greeting">Good morning</div>
           <div style="font-size:22px;font-weight:800" id="dash-name">Athlete</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;color:var(--text3)">Day streak</div>
-          <div style="font-size:28px;font-weight:800;color:var(--accent)" id="dash-streak">0</div>
+        <div class="streak-ring-wrap" id="streak-ring-wrap">
+          <svg viewBox="0 0 60 60">
+            <defs>
+              <linearGradient id="streakGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#00f5a0"/>
+                <stop offset="100%" stop-color="#00c8ff"/>
+              </linearGradient>
+            </defs>
+            <circle class="streak-ring-bg" cx="30" cy="30" r="26"/>
+            <circle class="streak-ring-fill" id="streak-ring-fill" cx="30" cy="30" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/>
+          </svg>
+          <div class="streak-val">
+            <div class="streak-num" id="dash-streak">0</div>
+            <div class="streak-lbl">streak</div>
+          </div>
         </div>
       </div>
       <div class="prog-bar" style="margin-top:12px"><div class="prog-fill" id="dash-prog" style="width:0%"></div></div>
@@ -641,6 +702,11 @@ function renderDashboard() {
   }).length;
   document.getElementById('stat-compounds').textContent = state.compounds.length;
   document.getElementById('dash-streak').textContent = state.streak;
+  const circ = 2 * Math.PI * 26;
+  const maxStreak = 30;
+  const pctStreak = Math.min(state.streak / maxStreak, 1);
+  const ring = document.getElementById('streak-ring-fill');
+  if (ring) ring.style.strokeDashoffset = circ - pctStreak * circ;
 
   const todayHealth = state.health.find(h => h.date === today);
   document.getElementById('m-weight').textContent = todayHealth?.weight || '—';
@@ -661,7 +727,7 @@ function renderDashboard() {
         <div class="dose-name">${c.name}</div>
         <div class="dose-meta">${c.dose}${c.unit} · ${c.freq} · ${c.route}</div>
       </div>
-      <button class="dose-check${logged ? ' done' : ''}" onclick="quickLog(${c.id})">
+      <button class="dose-check${logged ? ' done' : ''}" id="check-${c.id}" onclick="quickLog(${c.id})">
         <i class="ti ti-check"></i>
       </button>
     </div>`;
@@ -682,6 +748,8 @@ function quickLog(compoundId) {
       time: new Date().toTimeString().slice(0,5), color: c.color
     });
     updateStreak();
+    const btn = document.getElementById('check-' + compoundId);
+    if (btn) { btn.classList.add('done','pop'); btn.addEventListener('animationend', () => btn.classList.remove('pop'), {once:true}); }
   }
   renderDashboard();
 }
@@ -790,13 +858,22 @@ function renderProtocols() {
     el.innerHTML = '<div class="empty"><i class="ti ti-dna-2"></i><p>No compounds yet.<br>Add one to get started.</p></div>';
     return;
   }
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
   el.innerHTML = state.compounds.map(c => {
     const logs = state.logs.filter(l => l.compoundId === c.id);
-    return `<div class="compound-item">
+    const lastLog = logs.sort((a,b) => b.date.localeCompare(a.date))[0];
+    let statusClass = 'status-late', statusDotClass = 'status-overdue', statusText = 'Never logged';
+    if (lastLog) {
+      if (lastLog.date === today) { statusClass='status-ok'; statusDotClass='status-today'; statusText='Dosed today'; }
+      else if (lastLog.date === yesterday) { statusClass='status-warn'; statusDotClass='status-yesterday'; statusText='Dosed yesterday'; }
+      else { statusClass='status-late'; statusDotClass='status-overdue'; statusText=`Last: ${new Date(lastLog.date+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}`; }
+    }
+    return `<div class="compound-item ${statusClass}">
       <div class="compound-hdr">
         <div class="compound-dot" style="background:${c.color}"></div>
         <div class="compound-name">${c.name}</div>
-        <span class="pill pill-green">${c.active ? 'Active' : 'Paused'}</span>
+        <span class="pill ${statusClass==='status-ok'?'pill-green':statusClass==='status-warn'?'pill-yellow':'pill-red'}">${c.active ? 'Active' : 'Paused'}</span>
         <button class="btn-icon" onclick="deleteCompound(${c.id})" style="margin-left:auto"><i class="ti ti-trash" style="font-size:14px"></i></button>
       </div>
       <div class="compound-meta">
@@ -806,7 +883,10 @@ function renderProtocols() {
         <span><i class="ti ti-calendar" style="font-size:11px"></i> Since ${c.start}</span>
       </div>
       ${c.notes ? `<div style="font-size:12px;color:var(--text3);margin-top:8px;font-style:italic">${c.notes}</div>` : ''}
-      <div style="font-size:12px;color:var(--text2);margin-top:10px"><i class="ti ti-check" style="font-size:11px;color:var(--accent)"></i> ${logs.length} doses logged total</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+        <div class="status-dot ${statusDotClass}"></div>
+        <div style="font-size:12px;color:var(--text2)">${statusText} · ${logs.length} total doses</div>
+      </div>
     </div>`;
   }).join('');
 }
