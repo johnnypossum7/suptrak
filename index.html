@@ -361,8 +361,22 @@
         <button class="sec-action" onclick="openHealthModal()"><i class="ti ti-pencil"></i> Edit</button>
       </div>
       <div class="metric-row">
-        <div class="metric-card"><div class="metric-icon">⚖️</div><div class="metric-val" id="m-weight">—</div><div class="metric-lbl">Weight (lbs)</div></div>
-        <div class="metric-card"><div class="metric-icon">⚡</div><div class="metric-val" id="m-energy">—</div><div class="metric-lbl">Energy (1-10)</div></div>
+        <div class="metric-card" style="cursor:pointer" onclick="openQuickInput('weight')">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:20px">⚖️</span>
+            <span style="font-size:10px;color:var(--accent);font-weight:600">+ Input</span>
+          </div>
+          <div class="metric-val" id="m-weight">—</div>
+          <div class="metric-lbl">Weight (lbs)</div>
+        </div>
+        <div class="metric-card" style="cursor:pointer" onclick="openQuickInput('energy')">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:20px">⚡</span>
+            <span style="font-size:10px;color:var(--accent);font-weight:600">+ Input</span>
+          </div>
+          <div class="metric-val" id="m-energy">—</div>
+          <div class="metric-lbl">Energy (1-10)</div>
+        </div>
       </div>
       <div class="metric-row">
         <div class="metric-card" style="cursor:pointer" onclick="openAddMeal()">
@@ -373,7 +387,14 @@
           <div class="metric-val" id="m-cals-in">—</div>
           <div class="metric-lbl">Calories in</div>
         </div>
-        <div class="metric-card"><div class="metric-icon">🔥</div><div class="metric-val" id="m-cals">—</div><div class="metric-lbl">Calories burned</div></div>
+        <div class="metric-card" style="cursor:pointer" onclick="openQuickInput('cals')">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:20px">🔥</span>
+            <span style="font-size:10px;color:var(--accent);font-weight:600">+ Input</span>
+          </div>
+          <div class="metric-val" id="m-cals">—</div>
+          <div class="metric-lbl">Calories burned</div>
+        </div>
       </div>
       <div id="meals-today" style="margin-top:4px"></div>
     </div>
@@ -664,6 +685,21 @@
     <div class="field"><label>Start date</label><input type="date" id="comp-start"></div>
     <div class="field"><label>Notes (optional)</label><textarea id="comp-notes" placeholder="Protocol details, cycle length, etc."></textarea></div>
     <button class="btn btn-primary" onclick="saveCompound()"><i class="ti ti-plus"></i> Add to protocol</button>
+  </div>
+</div>
+
+<!-- MODAL: QUICK INPUT -->
+<div class="modal-overlay" id="modal-quick-input">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="quick-input-title">Input</div>
+      <button class="modal-close" onclick="closeModal('modal-quick-input')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field">
+      <label id="quick-input-label">Value</label>
+      <input type="number" id="quick-input-val" placeholder="" step="any">
+    </div>
+    <button class="btn btn-primary" onclick="saveQuickInput()"><i class="ti ti-check"></i> Save</button>
   </div>
 </div>
 
@@ -1531,6 +1567,40 @@ function renderStacks() {
         }).join('')}</div>
       </div>`;
     }).join('') + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">All compounds</div>';
+}
+
+// QUICK INPUT
+let quickInputField = '';
+const QUICK_INPUT_CONFIG = {
+  weight: { title: 'Log weight', label: 'Weight (lbs)', placeholder: '185', step: '0.1' },
+  energy: { title: 'Log energy', label: 'Energy level (1–10)', placeholder: '7', step: '1', min: '1', max: '10' },
+  cals:   { title: 'Log calories burned', label: 'Calories burned', placeholder: '2400', step: '1' },
+};
+
+function openQuickInput(field) {
+  quickInputField = field;
+  const cfg = QUICK_INPUT_CONFIG[field];
+  document.getElementById('quick-input-title').textContent = cfg.title;
+  document.getElementById('quick-input-label').textContent = cfg.label;
+  const inp = document.getElementById('quick-input-val');
+  inp.placeholder = cfg.placeholder;
+  inp.step = cfg.step || 'any';
+  inp.min = cfg.min || '';
+  inp.max = cfg.max || '';
+  inp.value = '';
+  openModal('modal-quick-input');
+  setTimeout(() => inp.focus(), 300);
+}
+
+function saveQuickInput() {
+  const val = document.getElementById('quick-input-val').value;
+  if (!val) { alert('Enter a value.'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  let h = state.health.find(x => x.date === today);
+  if (!h) { h = { date: today }; state.health.push(h); }
+  h[quickInputField] = parseFloat(val);
+  closeModal('modal-quick-input');
+  renderDashboard();
 }
 
 // MEALS
