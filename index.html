@@ -219,7 +219,28 @@
     .tab.active i{filter:drop-shadow(0 0 4px rgba(0,245,160,0.6))}
 
     /* SMOOTH CARD HOVER */
-    .compound-item,.dose-item,.history-item{transition:border-color .2s,box-shadow .2s}
+    .compound-item,.history-item{transition:border-color .2s,box-shadow .2s}
+
+    /* SWIPEABLE DOSE ITEM */
+    .swipe-wrap{position:relative;overflow:hidden;border-radius:var(--radius);margin-bottom:10px}
+    .swipe-actions{position:absolute;inset:0;display:flex;pointer-events:none}
+    .swipe-left-action{flex:1;background:var(--accent);display:flex;align-items:center;padding-left:20px;gap:6px;font-size:13px;font-weight:700;color:#0a0f1e;opacity:0;transition:opacity .1s}
+    .swipe-right-action{flex:1;background:var(--card);display:flex;align-items:center;justify-content:flex-end;padding-right:20px;gap:6px;font-size:13px;font-weight:700;color:var(--text2);opacity:0;transition:opacity .1s}
+    .dose-item{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;position:relative;z-index:1;transition:transform .25s cubic-bezier(.4,0,.2,1),border-color .2s,box-shadow .2s;will-change:transform;touch-action:pan-y}
+
+    /* STACK */
+    .stack-card{background:var(--card);border:0.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+    .stack-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .stack-name{font-size:15px;font-weight:700}
+    .stack-log-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:700;color:#0a0f1e;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font)}
+    .stack-log-btn.all-done{background:var(--border2);color:var(--text3)}
+    .stack-items{display:flex;flex-direction:column;gap:6px}
+    .stack-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--radius-sm)}
+    .stack-item-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .stack-item-name{font-size:13px;flex:1}
+    .stack-item-dose{font-size:12px;color:var(--text2)}
+    .stack-item-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);background:none;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0;transition:all .15s}
+    .stack-item-check.done{background:var(--accent);border-color:var(--accent);color:#0a0f1e}
 
     /* PROGRESS BAR ANIMATED */
     .prog-fill{transition:width 1s cubic-bezier(.4,0,.2,1)}
@@ -339,7 +360,11 @@
       <div style="font-size:13px;color:var(--text2);margin-top:2px">Manage your active compounds</div>
     </div>
     <div class="scroll">
-      <button class="btn btn-primary" style="margin-bottom:16px" onclick="openAddCompound()"><i class="ti ti-plus"></i> Add compound</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="openAddCompound()"><i class="ti ti-plus"></i> Add compound</button>
+        <button class="btn btn-outline" onclick="openCreateStack()"><i class="ti ti-stack-2"></i> Create stack</button>
+      </div>
+      <div id="stacks-list"></div>
       <div id="compounds-list"></div>
     </div>
   </div>
@@ -558,6 +583,21 @@
   </div>
 </div>
 
+<!-- MODAL: CREATE STACK -->
+<div class="modal-overlay" id="modal-stack">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Create stack</div>
+      <button class="modal-close" onclick="closeModal('modal-stack')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Stack name</label><input type="text" id="stack-name" placeholder="e.g. Morning Stack, Recovery Protocol"></div>
+    <div class="field"><label>Select compounds</label>
+      <div id="stack-compound-list" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveStack()"><i class="ti ti-check"></i> Create stack</button>
+  </div>
+</div>
+
 <!-- MODAL: HEALTH CHECK-IN -->
 <div class="modal-overlay" id="modal-health">
   <div class="modal">
@@ -638,6 +678,7 @@ let state = {
   compounds: [],
   logs: [],
   health: [],
+  stacks: [],
   streak: 0,
 };
 
@@ -721,17 +762,24 @@ function renderDashboard() {
   }
   el.innerHTML = state.compounds.map(c => {
     const logged = todayLogs.find(l => l.compoundId === c.id);
-    return `<div class="dose-item">
-      <div class="dose-dot" style="background:${c.color}"></div>
-      <div class="dose-info">
-        <div class="dose-name">${c.name}</div>
-        <div class="dose-meta">${c.dose}${c.unit} · ${c.freq} · ${c.route}</div>
+    return `<div class="swipe-wrap" id="swipe-${c.id}">
+      <div class="swipe-actions">
+        <div class="swipe-left-action" id="sla-${c.id}"><i class="ti ti-check"></i> Logged</div>
+        <div class="swipe-right-action" id="sra-${c.id}"><i class="ti ti-edit"></i> Edit</div>
       </div>
-      <button class="dose-check${logged ? ' done' : ''}" id="check-${c.id}" onclick="quickLog(${c.id})">
-        <i class="ti ti-check"></i>
-      </button>
+      <div class="dose-item${logged ? ' dose-item-glow' : ''}" id="di-${c.id}">
+        <div class="dose-dot" style="background:${c.color}"></div>
+        <div class="dose-info">
+          <div class="dose-name">${c.name}</div>
+          <div class="dose-meta">${c.dose}${c.unit} · ${c.freq} · ${c.route}</div>
+        </div>
+        <button class="dose-check${logged ? ' done' : ''}" id="check-${c.id}" onclick="quickLog(${c.id})">
+          <i class="ti ti-check"></i>
+        </button>
+      </div>
     </div>`;
   }).join('');
+  document.querySelectorAll('.dose-item').forEach(el => initSwipe(el));
 }
 
 function quickLog(compoundId) {
@@ -853,6 +901,7 @@ function saveCompound() {
 }
 
 function renderProtocols() {
+  renderStacks();
   const el = document.getElementById('compounds-list');
   if (!state.compounds.length) {
     el.innerHTML = '<div class="empty"><i class="ti ti-dna-2"></i><p>No compounds yet.<br>Add one to get started.</p></div>';
@@ -965,6 +1014,158 @@ function renderProgress() {
       ${h.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;font-style:italic">${h.notes}</div>` : ''}
     </div>
   `).join('');
+}
+
+// SWIPE GESTURES
+function initSwipe(el) {
+  let startX = 0, curX = 0, dragging = false;
+  const THRESHOLD = 80;
+  const id = parseInt(el.id.replace('di-',''));
+  const wrap = el.closest('.swipe-wrap');
+  const sla = wrap.querySelector('[id^="sla-"]');
+  const sra = wrap.querySelector('[id^="sra-"]');
+
+  function onStart(x) { startX = x; curX = x; dragging = true; }
+  function onMove(x) {
+    if (!dragging) return;
+    curX = x;
+    const dx = curX - startX;
+    el.style.transform = `translateX(${Math.max(-120, Math.min(120, dx))}px)`;
+    if (dx > 20) { sla.style.opacity = Math.min(1, (dx-20)/60); sra.style.opacity = 0; }
+    else if (dx < -20) { sra.style.opacity = Math.min(1, (-dx-20)/60); sla.style.opacity = 0; }
+    else { sla.style.opacity = 0; sra.style.opacity = 0; }
+  }
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    const dx = curX - startX;
+    el.style.transform = '';
+    sla.style.opacity = 0;
+    sra.style.opacity = 0;
+    if (dx > THRESHOLD) quickLog(id);
+    else if (dx < -THRESHOLD) openEditCompound(id);
+  }
+  el.addEventListener('touchstart', e => onStart(e.touches[0].clientX), {passive:true});
+  el.addEventListener('touchmove', e => onMove(e.touches[0].clientX), {passive:true});
+  el.addEventListener('touchend', onEnd);
+  el.addEventListener('mousedown', e => onStart(e.clientX));
+  el.addEventListener('mousemove', e => { if (e.buttons===1) onMove(e.clientX); });
+  el.addEventListener('mouseup', onEnd);
+  el.addEventListener('mouseleave', onEnd);
+}
+
+function openEditCompound(id) {
+  const c = state.compounds.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('comp-category').value = c.category || '';
+  document.getElementById('comp-dose').value = c.dose;
+  document.getElementById('comp-unit').value = c.unit;
+  document.getElementById('comp-freq').value = c.freq;
+  document.getElementById('comp-route').value = c.route;
+  document.getElementById('comp-notes').value = c.notes || '';
+  document.getElementById('comp-library-field').style.display = 'none';
+  document.getElementById('comp-custom-field').style.display = 'block';
+  document.getElementById('comp-custom').value = c.name;
+  document.querySelector('#modal-compound .modal-title').textContent = 'Edit compound';
+  openModal('modal-compound');
+  document.querySelector('#modal-compound .btn-primary').onclick = () => {
+    c.dose = document.getElementById('comp-dose').value;
+    c.unit = document.getElementById('comp-unit').value;
+    c.freq = document.getElementById('comp-freq').value;
+    c.route = document.getElementById('comp-route').value;
+    c.notes = document.getElementById('comp-notes').value;
+    c.name = document.getElementById('comp-custom').value || c.name;
+    closeModal('modal-compound');
+    document.querySelector('#modal-compound .modal-title').textContent = 'Add compound';
+    document.querySelector('#modal-compound .btn-primary').onclick = saveCompound;
+    renderProtocols(); renderDashboard();
+  };
+}
+
+// STACKS
+function openCreateStack() {
+  if (!state.compounds.length) { alert('Add some compounds first.'); return; }
+  document.getElementById('stack-name').value = '';
+  document.getElementById('stack-compound-list').innerHTML = state.compounds.map(c =>
+    `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border-radius:var(--radius-sm);cursor:pointer">
+      <input type="checkbox" value="${c.id}" style="width:16px;height:16px;accent-color:var(--accent)">
+      <div class="dose-dot" style="background:${c.color};width:8px;height:8px;border-radius:50%;flex-shrink:0"></div>
+      <span style="font-size:13px;flex:1">${c.name}</span>
+      <span style="font-size:11px;color:var(--text3)">${c.dose}${c.unit}</span>
+    </label>`
+  ).join('');
+  openModal('modal-stack');
+}
+
+function saveStack() {
+  const name = document.getElementById('stack-name').value.trim();
+  if (!name) { alert('Give your stack a name.'); return; }
+  const checked = [...document.querySelectorAll('#stack-compound-list input:checked')].map(i => parseInt(i.value));
+  if (!checked.length) { alert('Select at least one compound.'); return; }
+  state.stacks.push({ id: Date.now(), name, compoundIds: checked });
+  closeModal('modal-stack');
+  renderProtocols();
+}
+
+function logStack(stackId) {
+  const stack = state.stacks.find(s => s.id === stackId);
+  if (!stack) return;
+  const today = new Date().toISOString().split('T')[0];
+  let logged = 0;
+  stack.compoundIds.forEach(cid => {
+    const c = state.compounds.find(x => x.id === cid);
+    if (!c) return;
+    if (!state.logs.find(l => l.compoundId === cid && l.date === today)) {
+      state.logs.push({
+        id: Date.now() + Math.random(), compoundId: cid, compoundName: c.name, date: today,
+        amount: c.dose, unit: c.unit, route: c.route, site: '', notes: '',
+        time: new Date().toTimeString().slice(0,5), color: c.color
+      });
+      logged++;
+    }
+  });
+  if (logged > 0) updateStreak();
+  renderProtocols(); renderDashboard();
+}
+
+function deleteStack(id) {
+  if (!confirm('Remove this stack?')) return;
+  state.stacks = state.stacks.filter(s => s.id !== id);
+  renderProtocols();
+}
+
+function renderStacks() {
+  const el = document.getElementById('stacks-list');
+  if (!state.stacks.length) { el.innerHTML = ''; return; }
+  const today = new Date().toISOString().split('T')[0];
+  el.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Stacks</div>' +
+    state.stacks.map(stack => {
+      const compounds = stack.compoundIds.map(id => state.compounds.find(c => c.id === id)).filter(Boolean);
+      const allDone = compounds.every(c => state.logs.find(l => l.compoundId === c.id && l.date === today));
+      return `<div class="stack-card">
+        <div class="stack-hdr">
+          <div>
+            <div class="stack-name">${stack.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${compounds.length} compound${compounds.length!==1?'s':''}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-icon" onclick="deleteStack(${stack.id})" style="width:30px;height:30px"><i class="ti ti-trash" style="font-size:13px"></i></button>
+            <button class="stack-log-btn${allDone?' all-done':''}" onclick="logStack(${stack.id})">
+              ${allDone ? '<i class="ti ti-check"></i> Done' : '<i class="ti ti-player-play"></i> Log all'}
+            </button>
+          </div>
+        </div>
+        <div class="stack-items">${compounds.map(c => {
+          const done = !!state.logs.find(l => l.compoundId === c.id && l.date === today);
+          return `<div class="stack-item">
+            <div class="stack-item-dot" style="background:${c.color}"></div>
+            <div class="stack-item-name">${c.name}</div>
+            <div class="stack-item-dose">${c.dose}${c.unit}</div>
+            <button class="stack-item-check${done?' done':''}" onclick="quickLog(${c.id});renderProtocols()"><i class="ti ti-check" style="font-size:10px"></i></button>
+          </div>`;
+        }).join('')}</div>
+      </div>`;
+    }).join('') + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">All compounds</div>';
 }
 
 // INIT
