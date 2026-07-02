@@ -242,6 +242,24 @@
     .stack-item-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);background:none;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0;transition:all .15s}
     .stack-item-check.done{background:var(--accent);border-color:var(--accent);color:#0a0f1e}
 
+    /* HEATMAP */
+    .heatmap-col{display:flex;flex-direction:column;gap:3px}
+    .heatmap-cell{width:12px;height:12px;border-radius:2px;background:#1e2d47;cursor:default;transition:transform .1s}
+    .heatmap-cell:hover{transform:scale(1.3)}
+    .heatmap-cell.h1{background:rgba(0,245,160,.25)}
+    .heatmap-cell.h2{background:rgba(0,245,160,.5)}
+    .heatmap-cell.h3{background:rgba(0,245,160,.75)}
+    .heatmap-cell.h4{background:#00f5a0}
+
+    /* CYCLE CARD */
+    .cycle-card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px}
+    .cycle-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .cycle-name{font-size:15px;font-weight:700}
+    .cycle-week{font-size:12px;color:var(--accent);font-weight:600}
+    .cycle-bar-wrap{background:var(--border);border-radius:20px;height:8px;margin-bottom:6px;overflow:hidden}
+    .cycle-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .8s cubic-bezier(.4,0,.2,1)}
+    .cycle-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
+
     /* PROGRESS BAR ANIMATED */
     .prog-fill{transition:width 1s cubic-bezier(.4,0,.2,1)}
     @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
@@ -384,10 +402,50 @@
   <div id="tab-progress" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
     <div class="grad-hdr">
       <div style="font-size:22px;font-weight:800">Progress</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:2px">Health metrics over time</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">Consistency, trends, cycles</div>
     </div>
     <div class="scroll">
-      <div id="progress-list"></div>
+      <!-- HEATMAP -->
+      <div class="card-title" style="margin-bottom:8px">Dose consistency — last 12 weeks</div>
+      <div class="card" style="padding:14px 10px;margin-bottom:16px;overflow-x:auto">
+        <div id="heatmap-wrap" style="display:flex;gap:3px;min-width:max-content"></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px;justify-content:flex-end">
+          <span style="font-size:10px;color:var(--text3)">Less</span>
+          <div style="width:10px;height:10px;border-radius:2px;background:#1e2d47"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,245,160,.3)"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,245,160,.6)"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#00f5a0"></div>
+          <span style="font-size:10px;color:var(--text3)">More</span>
+        </div>
+      </div>
+
+      <!-- OVERLAY CHART -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">Trends — last 14 days</div>
+        <div style="display:flex;gap:6px">
+          <select id="chart-metric" onchange="renderProgress()" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;font-size:11px;color:var(--text);font-family:var(--font);outline:none">
+            <option value="energy">Energy</option>
+            <option value="mood">Mood</option>
+            <option value="sleep">Sleep</option>
+            <option value="weight">Weight</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" style="padding:14px;margin-bottom:16px">
+        <canvas id="trend-chart" height="160" style="width:100%"></canvas>
+        <div id="chart-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+      </div>
+
+      <!-- CYCLES -->
+      <div class="card-title" style="margin-bottom:8px">Cycles</div>
+      <div id="cycles-list" style="margin-bottom:12px"></div>
+      <button class="btn btn-outline" onclick="openAddCycle()" style="margin-bottom:16px"><i class="ti ti-plus"></i> Add cycle</button>
+
+      <!-- WEIGHT TREND -->
+      <div class="card-title" style="margin-bottom:8px">Weight trend</div>
+      <div class="card" style="padding:14px;margin-bottom:16px">
+        <canvas id="weight-chart" height="120" style="width:100%"></canvas>
+      </div>
     </div>
   </div>
 
@@ -583,6 +641,27 @@
   </div>
 </div>
 
+<!-- MODAL: ADD CYCLE -->
+<div class="modal-overlay" id="modal-cycle">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Add cycle</div>
+      <button class="modal-close" onclick="closeModal('modal-cycle')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Cycle name</label><input type="text" id="cycle-name" placeholder="e.g. BPC-157 Protocol, TRT Cycle 1"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Start date</label><input type="date" id="cycle-start"></div>
+      <div class="field"><label>Length (weeks)</label><input type="number" id="cycle-weeks" placeholder="12" min="1" max="52"></div>
+    </div>
+    <div class="field"><label>Compound (optional)</label>
+      <select id="cycle-compound">
+        <option value="">All / General</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="saveCycle()"><i class="ti ti-check"></i> Save cycle</button>
+  </div>
+</div>
+
 <!-- MODAL: CREATE STACK -->
 <div class="modal-overlay" id="modal-stack">
   <div class="modal">
@@ -679,6 +758,7 @@ let state = {
   logs: [],
   health: [],
   stacks: [],
+  cycles: [],
   streak: 0,
 };
 
@@ -996,24 +1076,252 @@ function saveHealth() {
 
 // PROGRESS
 function renderProgress() {
-  const el = document.getElementById('progress-list');
-  if (!state.health.length) {
-    el.innerHTML = '<div class="empty"><i class="ti ti-chart-line"></i><p>No check-ins yet.<br>Log your health from the dashboard.</p></div>';
+  renderHeatmap();
+  renderTrendChart();
+  renderCycles();
+  renderWeightChart();
+}
+
+function renderHeatmap() {
+  const wrap = document.getElementById('heatmap-wrap');
+  if (!wrap) return;
+  const today = new Date();
+  const WEEKS = 12;
+  const cols = [];
+  for (let w = WEEKS - 1; w >= 0; w--) {
+    const colDays = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - (w * 7 + (6 - d)));
+      const dateStr = date.toISOString().split('T')[0];
+      const count = state.logs.filter(l => l.date === dateStr).length;
+      const lvl = count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 5 ? 3 : 4;
+      colDays.push(`<div class="heatmap-cell${lvl > 0 ? ' h'+lvl : ''}" title="${dateStr}: ${count} doses"></div>`);
+    }
+    cols.push(`<div class="heatmap-col">${colDays.join('')}</div>`);
+  }
+  wrap.innerHTML = cols.join('');
+}
+
+function renderTrendChart() {
+  const canvas = document.getElementById('trend-chart');
+  if (!canvas) return;
+  const metric = document.getElementById('chart-metric')?.value || 'energy';
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 300;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = 160 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const cW = W, cH = 160;
+  ctx.clearRect(0, 0, cW, cH);
+
+  const days = 14;
+  const labels = [];
+  const metricData = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    labels.push(d.getDate());
+    const h = state.health.find(x => x.date === ds);
+    metricData.push(h && h[metric] ? parseFloat(h[metric]) : null);
+  }
+
+  const compoundSeries = state.compounds.slice(0, 3).map(c => ({
+    name: c.name.split(' ')[0],
+    color: c.color,
+    data: Array.from({length: days}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (days - 1 - i));
+      const ds = d.toISOString().split('T')[0];
+      return state.logs.filter(l => l.compoundId === c.id && l.date === ds).length > 0 ? 1 : 0;
+    })
+  }));
+
+  const pad = {t:10, r:10, b:30, l:30};
+  const chartW = cW - pad.l - pad.r;
+  const chartH = cH - pad.t - pad.b;
+  const maxVal = metric === 'weight' ? Math.max(...metricData.filter(Boolean), 200) : 10;
+  const minVal = metric === 'weight' ? Math.min(...metricData.filter(Boolean), 100) : 0;
+  const range = maxVal - minVal || 1;
+
+  function xPos(i) { return pad.l + (i / (days - 1)) * chartW; }
+  function yPos(v) { return pad.t + chartH - ((v - minVal) / range) * chartH; }
+
+  ctx.strokeStyle = '#1e2d47';
+  ctx.lineWidth = 0.5;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const y = pad.t + chartH * (1 - f);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + chartW, y); ctx.stroke();
+    ctx.fillStyle = '#4a5a7a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(minVal + range * f), pad.l - 4, y + 3);
+  });
+
+  labels.forEach((lbl, i) => {
+    if (i % 2 === 0) {
+      ctx.fillStyle = '#4a5a7a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(lbl, xPos(i), cH - 6);
+    }
+  });
+
+  compoundSeries.forEach(series => {
+    series.data.forEach((v, i) => {
+      if (!v) return;
+      ctx.fillStyle = series.color + '33';
+      ctx.fillRect(xPos(i) - 5, pad.t, 10, chartH);
+    });
+  });
+
+  const metricPoints = metricData.map((v, i) => v !== null ? {x: xPos(i), y: yPos(v)} : null);
+  const validPoints = metricPoints.filter(Boolean);
+  if (validPoints.length > 1) {
+    ctx.strokeStyle = '#00f5a0';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    let started = false;
+    metricPoints.forEach(p => {
+      if (!p) { started = false; return; }
+      if (!started) { ctx.moveTo(p.x, p.y); started = true; } else { ctx.lineTo(p.x, p.y); }
+    });
+    ctx.stroke();
+    validPoints.forEach(p => {
+      ctx.fillStyle = '#00f5a0';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
+  const legend = document.getElementById('chart-legend');
+  if (legend) {
+    legend.innerHTML = `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:16px;height:2px;background:#00f5a0;border-radius:2px"></div>${metric.charAt(0).toUpperCase()+metric.slice(1)}</div>` +
+      compoundSeries.map(s => `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:${s.color}33;border:1px solid ${s.color}"></div>${s.name}</div>`).join('');
+  }
+}
+
+function renderWeightChart() {
+  const canvas = document.getElementById('weight-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 300;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = 120 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const cW = W, cH = 120;
+  ctx.clearRect(0, 0, cW, cH);
+
+  const weightData = [...state.health].filter(h => h.weight).sort((a,b) => a.date.localeCompare(b.date));
+  if (weightData.length < 2) {
+    ctx.fillStyle = '#4a5a7a'; ctx.font = '13px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Log weight in daily check-ins to see trend', cW/2, cH/2);
     return;
   }
-  const sorted = [...state.health].sort((a,b) => b.date.localeCompare(a.date));
-  el.innerHTML = sorted.map(h => `
-    <div class="card" style="margin-bottom:12px">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${new Date(h.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
-      <div class="metric-row">
-        ${h.weight ? `<div class="metric-card"><div class="metric-icon">⚖️</div><div class="metric-val">${h.weight}</div><div class="metric-lbl">lbs</div></div>` : ''}
-        ${h.sleep ? `<div class="metric-card"><div class="metric-icon">😴</div><div class="metric-val">${h.sleep}</div><div class="metric-lbl">hrs sleep</div></div>` : ''}
-        ${h.energy ? `<div class="metric-card"><div class="metric-icon">⚡</div><div class="metric-val">${h.energy}/10</div><div class="metric-lbl">energy</div></div>` : ''}
-        ${h.mood ? `<div class="metric-card"><div class="metric-icon">😊</div><div class="metric-val">${h.mood}/10</div><div class="metric-lbl">mood</div></div>` : ''}
+
+  const pad = {t:10, r:10, b:24, l:36};
+  const chartW = cW - pad.l - pad.r, chartH = cH - pad.t - pad.b;
+  const weights = weightData.map(h => parseFloat(h.weight));
+  const minW = Math.min(...weights) - 2, maxW = Math.max(...weights) + 2;
+  const range = maxW - minW || 1;
+  function xP(i) { return pad.l + (i / (weightData.length - 1)) * chartW; }
+  function yP(v) { return pad.t + chartH - ((v - minW) / range) * chartH; }
+
+  ctx.strokeStyle = '#1e2d47'; ctx.lineWidth = 0.5;
+  [minW, (minW+maxW)/2, maxW].forEach(v => {
+    const y = yP(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+chartW, y); ctx.stroke();
+    ctx.fillStyle = '#4a5a7a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(v), pad.l - 4, y + 3);
+  });
+
+  const grad = ctx.createLinearGradient(0, pad.t, 0, cH);
+  grad.addColorStop(0, 'rgba(0,200,255,0.25)');
+  grad.addColorStop(1, 'rgba(0,200,255,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(xP(0), cH);
+  weightData.forEach((_, i) => ctx.lineTo(xP(i), yP(weights[i])));
+  ctx.lineTo(xP(weightData.length-1), cH);
+  ctx.closePath(); ctx.fill();
+
+  ctx.strokeStyle = '#00c8ff'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  weightData.forEach((_, i) => i === 0 ? ctx.moveTo(xP(i), yP(weights[i])) : ctx.lineTo(xP(i), yP(weights[i])));
+  ctx.stroke();
+
+  weightData.forEach((h, i) => {
+    if (i === 0 || i === weightData.length-1 || i % Math.ceil(weightData.length/4) === 0) {
+      ctx.fillStyle = '#4a5a7a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(new Date(h.date+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}), xP(i), cH-4);
+    }
+  });
+}
+
+function renderCycles() {
+  const el = document.getElementById('cycles-list');
+  if (!el) return;
+  if (!state.cycles.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text3);margin-bottom:8px">No cycles yet. Track a protocol duration to see your progress.</div>';
+    return;
+  }
+  const today = new Date();
+  el.innerHTML = state.cycles.map(c => {
+    const start = new Date(c.start + 'T12:00');
+    const totalDays = c.weeks * 7;
+    const elapsed = Math.max(0, Math.min(totalDays, Math.floor((today - start) / 86400000)));
+    const pct = Math.round((elapsed / totalDays) * 100);
+    const weekNum = Math.min(c.weeks, Math.ceil(elapsed / 7));
+    const daysLeft = Math.max(0, totalDays - elapsed);
+    const done = elapsed >= totalDays;
+    const endDate = new Date(start); endDate.setDate(endDate.getDate() + totalDays);
+    return `<div class="cycle-card">
+      <div class="cycle-hdr">
+        <div>
+          <div class="cycle-name">${c.name}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${c.compoundName || 'General'} · ${c.weeks} weeks</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="cycle-week">${done ? 'Complete' : `Week ${weekNum}/${c.weeks}`}</div>
+          <button class="btn-icon" onclick="deleteCycle(${c.id})" style="width:28px;height:28px"><i class="ti ti-trash" style="font-size:12px"></i></button>
+        </div>
       </div>
-      ${h.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;font-style:italic">${h.notes}</div>` : ''}
-    </div>
-  `).join('');
+      <div class="cycle-bar-wrap"><div class="cycle-bar-fill" style="width:${pct}%"></div></div>
+      <div class="cycle-meta">
+        <span>${start.toLocaleDateString('en-US',{month:'short',day:'numeric'})} → ${endDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+        <span>${done ? 'Finished' : `${daysLeft} days left`}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddCycle() {
+  document.getElementById('cycle-start').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cycle-weeks').value = '';
+  document.getElementById('cycle-name').value = '';
+  const sel = document.getElementById('cycle-compound');
+  sel.innerHTML = '<option value="">All / General</option>' +
+    state.compounds.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  openModal('modal-cycle');
+}
+
+function saveCycle() {
+  const name = document.getElementById('cycle-name').value.trim();
+  if (!name) { alert('Give your cycle a name.'); return; }
+  const weeks = parseInt(document.getElementById('cycle-weeks').value);
+  if (!weeks || weeks < 1) { alert('Enter a valid length in weeks.'); return; }
+  const cid = document.getElementById('cycle-compound').value;
+  const compound = cid ? state.compounds.find(c => c.id == cid) : null;
+  state.cycles.push({
+    id: Date.now(), name, weeks,
+    start: document.getElementById('cycle-start').value,
+    compoundId: cid || null,
+    compoundName: compound?.name || null,
+  });
+  closeModal('modal-cycle');
+  renderCycles();
+}
+
+function deleteCycle(id) {
+  if (!confirm('Remove this cycle?')) return;
+  state.cycles = state.cycles.filter(c => c.id !== id);
+  renderCycles();
 }
 
 // SWIPE GESTURES
